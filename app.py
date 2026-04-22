@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # Configuración de la página web
 st.set_page_config(page_title="Proyección de Supervisión", layout="wide")
 
-st.title("Calculadora de Supervisión: Redes de Polietileno")
+st.title("Calculadora de Supervisión de Redes de Gas Natural")
 st.markdown("Distribución de muestreo según **Resolución N° 283-2015-OS/CD**")
 
 # 1. Constantes normativas
@@ -46,7 +46,7 @@ if tope_de_obra_m > 0:
     col_res3.metric("Porcentaje a auditar", f"{porcentaje_fijo:.2f} %")
 
     # Tabla de afijación proporcional
-    st.markdown("### === DISTRIBUCIÓN POR ESTRATOS (AFIJACIÓN PROPORCIONAL) ===")
+    st.markdown("### === DISTRIBUCIÓN POR ESTRATOS ===")
     
     tabla_datos = []
     for diam, met in datos_estratos.items():
@@ -65,7 +65,7 @@ if tope_de_obra_m > 0:
     st.table(tabla_datos)
 
     # 4. Gráfica (Respetando tus modificaciones exactas)
-    st.markdown("### Gráfica Asintótica")
+    #st.markdown("### Proyección de Supervisión")
     
     # Tu ajuste en el eje X
     x_max_grafica = max(tope_de_obra_m, tope_de_obra_m * 1.5)
