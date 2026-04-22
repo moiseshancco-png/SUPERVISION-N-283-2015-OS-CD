@@ -25,9 +25,9 @@ tope_de_obra_m = 0.0
 for i in range(int(num_estratos)):
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        diametro = st.text_input(f"Diámetro {i+1} [mm]:", value=f"{110 if i==0 else 63}", key=f"d_{i}")
+        diametro = st.text_input(f"Diámetro {i+1} [mm]:", value=f"{110 if i==0 else 63}", format="%g", key=f"d_{i}")
     with col2:
-        metros = st.number_input(f"Longitud [m]:", min_value=0.0, value=1000.0 if i==0 else 500.0, step=100.0, key=f"m_{i}")
+        metros = st.number_input(f"Longitud [m]:", min_value=0.0, value=1000.0 if i==0 else 500.0, step=100.0, format="%g", key=f"m_{i}")
     
     if diametro and metros > 0:
         datos_estratos[diametro] = metros
