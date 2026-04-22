@@ -56,8 +56,7 @@ if tope_de_obra_m > 0:
         
         tabla_datos.append({
             "Diámetro (mm)": diam, 
-            "Población (N_h)": f"{met:,.2f} m", 
-            "Peso (W_h)": f"{Wh:.4f}", 
+            "Población (N_h)": f"{met:,.2f} m",  
             "A Supervisar (n_h)": f"{nh:,.2f} m",
             "% del Total": f"{porc_nh:.2f} %"
         })
