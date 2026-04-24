@@ -4,139 +4,134 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Configuración de la página web
-st.set_page_config(page_title="Supervisión: Terreno y Pavimento", layout="wide")
+st.set_page_config(page_title="Supervisión de Redes GN", layout="wide")
 
-st.title("Dossier de Supervisión: Terrenos y Pavimentos")
-st.markdown("Distribución de muestreo según **Resolución N° 283-2015-OS/CD**")
+st.title("Calculadora de Supervisión de Redes de Gas Natural")
+st.markdown("Gestión de Dossier y Muestreo según **Resolución N° 283-2015-OS/CD**")
 
 # 1. Constantes normativas
 t_alpha = 1.645
 d = 0.05
 S2h = 0.25  # Varianza máxima asumida
 C = (t_alpha**2) * S2h
+asintota_max = C / (d**2)
 
 # ==========================================
-# PANEL LATERAL: INGRESO DE DATOS Y CHECKLISTS
+# 2. INTERFAZ DE USUARIO (PANEL LATERAL)
 # ==========================================
-st.sidebar.header("1. Población Total")
-actas_minem = st.sidebar.number_input("Total Actas (Minem) [m]:", min_value=0.0, value=2021.06, format="%g")
+st.sidebar.header("Configuración del Proyecto")
 
-# --- Estratos de Terreno ---
-st.sidebar.header("2. Tipo de Terreno")
-st.sidebar.caption("Marca los que apliquen y define su longitud:")
-opciones_terreno = ["(1) Normal", "(2) Arenoso", "(3) Semirocoso", "(4) Rocoso"]
+# Entrada maestra: Total Actas Minem
+n_poblacion_total = st.sidebar.number_input("Total Actas (Minem) [m]:", min_value=0.0, value=2021.06, format="%g")
+
+# --- CONJUNTO 1: TIPO DE TERRENO ---
+st.sidebar.subheader("Estratos: Tipo de Terreno")
+opciones_terreno = ["Normal", "Arenoso", "Semirocoso", "Rocoso"]
 datos_terreno = {}
 
 for t in opciones_terreno:
-    # Checkbox para activar el estrato
-    if st.sidebar.checkbox(t, value=True if t == "(1) Normal" else False, key=f"chk_t_{t}"):
-        # Si está activado, mostramos el input de metros
-        val = st.sidebar.number_input(f"Metros de {t}:", min_value=0.0, value=0.0, format="%g", key=f"val_t_{t}")
-        if val > 0:
-            datos_terreno[t] = val
+    if st.sidebar.checkbox(f"Terreno {t}", value=True if t=="Normal" else False, key=f"chk_t_{t}"):
+        val = st.sidebar.number_input(f"Metros - {t}:", min_value=0.0, value=0.0, format="%g", key=f"val_t_{t}")
+        if val > 0: datos_terreno[t] = val
 
-# --- Estratos de Pavimento ---
-st.sidebar.header("3. Tipo de Pavimento")
-st.sidebar.caption("Marca los que apliquen y define su longitud:")
-opciones_pavimento = ["(1) Afirmado", "(2) Flexible", "(3) Rígido", "(4) Mixto"]
+# --- CONJUNTO 2: TIPO DE PAVIMENTO ---
+st.sidebar.subheader("Estratos: Tipo de Pavimento")
+opciones_pavimento = ["Afirmado", "Flexible", "Rígido", "Mixto"]
 datos_pavimento = {}
 
 for p in opciones_pavimento:
-    if st.sidebar.checkbox(p, value=True if p == "(2) Flexible" else False, key=f"chk_p_{p}"):
-        val = st.sidebar.number_input(f"Metros de {p}:", min_value=0.0, value=0.0, format="%g", key=f"val_p_{p}")
-        if val > 0:
-            datos_pavimento[p] = val
+    if st.sidebar.checkbox(f"Pavimento {p}", value=True if p=="Flexible" else False, key=f"chk_p_{p}"):
+        val = st.sidebar.number_input(f"Metros - {p}:", min_value=0.0, value=0.0, format="%g", key=f"val_p_{p}")
+        if val > 0: datos_pavimento[p] = val
 
 # ==========================================
-# LÓGICA DE VALIDACIÓN Y CÁLCULOS
+# 3. VALIDACIÓN Y CÁLCULOS
 # ==========================================
-if actas_minem > 0:
-    suma_terreno = sum(datos_terreno.values())
-    suma_pavimento = sum(datos_pavimento.values())
+if n_poblacion_total > 0:
+    suma_t = sum(datos_terreno.values())
+    suma_p = sum(datos_pavimento.values())
     
-    # Tolerancia de 2 decimales para evitar errores de redondeo interno de la PC
-    terreno_valido = round(suma_terreno, 2) == round(actas_minem, 2)
-    pavimento_valido = round(suma_pavimento, 2) == round(actas_minem, 2)
+    # Validamos que las sumas coincidan con el total de Actas
+    error_margen = 0.01
+    terreno_ok = abs(suma_t - n_poblacion_total) < error_margen
+    pavimento_ok = abs(suma_p - n_poblacion_total) < error_margen
 
-    if not (terreno_valido and pavimento_valido):
-        # Mensaje de Error si no cuadran las sumas
-        st.error("⚠️ **Alerta de Inconsistencia:** Las sumas de los estratos no coinciden con la Población Total.")
-        st.markdown(f"""
-        Para proceder con el cálculo oficial, los tres valores deben ser idénticos:
-        * **Total Actas (Minem):** `{actas_minem:,.2f} m`
-        * **Suma Tipo de Terreno:** `{suma_terreno:,.2f} m` 
-        * **Suma Tipo de Pavimento:** `{suma_pavimento:,.2f} m`
-        
-        👉 *Ajusta los valores en el panel izquierdo para balancear el proyecto.*
-        """)
+    if not (terreno_ok and pavimento_ok):
+        st.warning("⚠️ **Inconsistencia en los metrados:**")
+        col_err1, col_err2, col_err3 = st.columns(3)
+        col_err1.write(f"**Actas (Minem):** {n_poblacion_total:,.2f} m")
+        col_err2.error(f"**Suma Terrenos:** {suma_t:,.2f} m")
+        col_err3.error(f"**Suma Pavimentos:** {suma_p:,.2f} m")
+        st.info("Ajusta los valores para que ambas sumas igualen el total de Actas Minem.")
     else:
-        # Si todo es correcto, hacemos el cálculo
-        st.success("✅ **Validación Exitosa:** Los metrados cuadran perfectamente. Procediendo con el cálculo de muestreo.")
-        
-        # Muestra total (n) basada en Actas Minem (N)
-        n_supervisar = C / ((d**2) + (C / actas_minem))
-        porcentaje_fijo = (n_supervisar / actas_minem) * 100
+        # Cálculo del n supervisar (único para el proyecto)
+        n_supervisar = C / ((d**2) + (C / n_poblacion_total))
+        porcentaje_fijo = (n_supervisar / n_poblacion_total) * 100
 
-        # Resumen Global
-        col_r1, col_r2, col_r3 = st.columns(3)
-        col_r1.metric("Población Confirmada (N)", f"{actas_minem:,.2f} m")
-        col_r2.metric("Muestra Física a Auditar (n)", f"{n_supervisar:,.2f} m")
-        col_r3.metric("Porcentaje de Supervisión", f"{porcentaje_fijo:.2f} %")
+        # Resumen Principal
+        st.subheader("=== RESUMEN FINAL DEL EXPEDIENTE ===")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Población Confirmada (N)", f"{n_poblacion_total:,.2f} m")
+        c2.metric("Total a Supervisar (n)", f"{n_supervisar:,.2f} m")
+        c3.metric("Porcentaje Global", f"{porcentaje_fijo:.2f} %")
 
+        # ==========================================
+        # 4. LAS DOS MATRICES (LADO A LADO)
+        # ==========================================
         st.divider()
+        col_mat1, col_mat2 = st.columns(2)
 
-        # Función para crear matriz y gráfico para no repetir código
-        def generar_reporte_estrato(titulo, datos_dict, color_grafico):
-            st.subheader(f"Distribución por {titulo}")
-            
-            # Construcción de la matriz (DataFrame)
-            filas_tabla = []
-            etiquetas = []
-            valores_n = []
-            
-            for estrato, metros in datos_dict.items():
-                Wh = metros / actas_minem
-                nh = n_supervisar * Wh
-                
-                etiquetas.append(estrato)
-                valores_n.append(nh)
-                
-                filas_tabla.append({
-                    "Categoría": estrato,
-                    "Longitud Declarada (m)": f"{metros:,.2f}",
-                    "Peso Estrato (Wh)": f"{Wh:.4f}",
-                    "Meta Física a Supervisar (nh)": f"{nh:,.2f}"
-                })
-            
-            # Mostrar Tabla
-            df = pd.DataFrame(filas_tabla)
-            st.table(df)
-            
-            # Mostrar Gráfico de Barras
-            fig, ax = plt.subplots(figsize=(8, 4))
-            barras = ax.bar(etiquetas, valores_n, color=color_grafico, edgecolor='black', alpha=0.8)
-            
-            # Poner etiquetas de datos sobre cada barra
-            for bar in barras:
-                yval = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2, yval + (max(valores_n)*0.02), f'{yval:.1f} m', ha='center', fontweight='bold')
-                
-            ax.set_ylabel('Metros a Supervisar (nh)', fontsize=10)
-            ax.set_title(f'Muestreo Físico: {titulo}', fontsize=12, fontweight='bold')
-            ax.grid(axis='y', linestyle=':', alpha=0.7)
-            
-            # Ajuste de diseño
-            plt.tight_layout()
-            st.pyplot(fig)
+        with col_mat1:
+            st.markdown("### Matrix A: Tipo de Terreno")
+            filas_t = []
+            for k, v in datos_terreno.items():
+                wh = v / n_poblacion_total
+                nh = n_supervisar * wh
+                filas_t.append({"Terreno": k, "Población (Nh)": f"{v:,.2f} m", "Muestra (nh)": f"{nh:,.2f} m", "%": f"{(nh/v)*100:.2f}%"})
+            st.table(pd.DataFrame(filas_t))
 
-        # Dividimos la pantalla en dos columnas para mostrar ambos reportes lado a lado
-        col_izq, col_der = st.columns(2)
+        with col_mat2:
+            st.markdown("### Matrix B: Tipo de Pavimento")
+            filas_p = []
+            for k, v in datos_pavimento.items():
+                wh = v / n_poblacion_total
+                nh = n_supervisar * wh
+                filas_p.append({"Pavimento": k, "Población (Nh)": f"{v:,.2f} m", "Muestra (nh)": f"{nh:,.2f} m", "%": f"{(nh/v)*100:.2f}%"})
+            st.table(pd.DataFrame(filas_p))
+
+        # ==========================================
+        # 5. GRÁFICO ÚNICO DE PROYECCIÓN
+        # ==========================================
+        st.divider()
+        st.markdown("### Proyección de Supervisión del Proyecto")
         
-        with col_izq:
-            generar_reporte_estrato("Tipo de Terreno", datos_terreno, '#2ca02c') # Verde
-            
-        with col_der:
-            generar_reporte_estrato("Tipo de Pavimento", datos_pavimento, '#ff7f0e') # Naranja
+        x_max = max(n_poblacion_total, n_poblacion_total * 1.5)
+        N_vals = np.linspace(10, x_max, 1000)
+        n_vals = C / ((d**2) + (C / N_vals))
 
+        fig, ax = plt.subplots(figsize=(11, 5))
+        ax.plot(N_vals, n_vals, color='#1f77b4', lw=3, label='Curva de muestreo ($n$)')
+        ax.axhline(y=asintota_max, color='red', ls='--', lw=2, alpha=0.8, label=f'Asíntota Máx: ~{asintota_max:.1f} m')
+        ax.plot(n_poblacion_total, n_supervisar, 'ko', ms=9, zorder=5)
+        
+        ax.vlines(n_poblacion_total, 0, n_supervisar, color='gray', ls=':', alpha=0.7)
+        ax.hlines(n_supervisar, 0, n_poblacion_total, color='gray', ls=':', alpha=0.7)
+
+        texto = f'Proyecto Actual:\nN: {n_poblacion_total:,.0f} m\nn: {n_supervisar:.1f} m\n%: {porcentaje_fijo:.2f}%'
+        off_x = -0.15 if n_poblacion_total > (x_max * 0.7) else 0.03
+        ax.annotate(texto, xy=(n_poblacion_total, n_supervisar), 
+                    xytext=(n_poblacion_total + (x_max * off_x), n_supervisar - 60),
+                    bbox=dict(boxstyle="round,pad=0.5", fc="#f8f9fa", ec="gray", lw=1.5),
+                    arrowprops=dict(arrowstyle="->", color='black', lw=1.5))
+
+        ax.set_title('Proyección de Supervisión', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Total del Proyecto (N en metros)', fontsize=11)
+        ax.set_ylabel('Cantidad Supervisada (n)', fontsize=11)
+        ax.set_xlim(0, x_max)
+        ax.set_ylim(0, asintota_max * 1.2)
+        ax.grid(True, ls='--', alpha=0.5)
+        ax.legend(loc='lower right')
+
+        st.pyplot(fig)
 else:
-    st.info("👈 Por favor, ingresa un valor mayor a 0 en el Total de Actas (Minem).")
+    st.info("👈 Ingrese el Total de Actas (Minem) para iniciar el cálculo.")
