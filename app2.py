@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Configuración de la página web
-st.set_page_config(page_title="Supervisión de Redes GN", layout="wide")
+st.set_page_config(page_title="Proyección de Supervisión", layout="wide")
 
 st.title("Calculadora de Supervisión de Redes de Gas Natural")
 st.markdown("Gestión de Dossier y Muestreo según **Resolución N° 283-2015-OS/CD**")
@@ -57,13 +57,24 @@ if n_poblacion_total > 0:
     pavimento_ok = abs(suma_p - n_poblacion_total) < error_margen
 
     if not (terreno_ok and pavimento_ok):
-        st.warning("⚠️ **Inconsistencia en los metrados:**")
+        st.error("⚠️ **Inconsistencia en los metrados del Dossier:**")
         col_err1, col_err2, col_err3 = st.columns(3)
-        col_err1.write(f"**Actas (Minem):** {n_poblacion_total:,.2f} m")
-        col_err2.error(f"**Suma Terrenos:** {suma_t:,.2f} m")
-        col_err3.error(f"**Suma Pavimentos:** {suma_p:,.2f} m")
-        st.info("Ajusta los valores para que ambas sumas igualen el total de Actas Minem.")
+        col_err1.warning(f"**Actas (Minem):** {n_poblacion_total:,.2f} m")
+        
+        if not terreno_ok:
+            col_err2.error(f"**Suma Terrenos:** {suma_t:,.2f} m")
+        else:
+            col_err2.success(f"**Suma Terrenos:** {suma_t:,.2f} m")
+            
+        if not pavimento_ok:
+            col_err3.error(f"**Suma Pavimentos:** {suma_p:,.2f} m")
+        else:
+            col_err3.success(f"**Suma Pavimentos:** {suma_p:,.2f} m")
+            
+        st.info("👉 Ajusta los valores en el panel izquierdo para que ambas sumas igualen el total de Actas Minem.")
     else:
+        st.success("✅ **Validación Exitosa:** Los metrados cuadran perfectamente con el Total de Actas Minem. Procediendo al cálculo.")
+        
         # Cálculo del n supervisar (único para el proyecto)
         n_supervisar = C / ((d**2) + (C / n_poblacion_total))
         porcentaje_fijo = (n_supervisar / n_poblacion_total) * 100
@@ -82,21 +93,33 @@ if n_poblacion_total > 0:
         col_mat1, col_mat2 = st.columns(2)
 
         with col_mat1:
-            st.markdown("### Matrix A: Tipo de Terreno")
+            st.markdown("### Distribución por Tipo de Terreno")
             filas_t = []
             for k, v in datos_terreno.items():
                 wh = v / n_poblacion_total
                 nh = n_supervisar * wh
-                filas_t.append({"Terreno": k, "Población (Nh)": f"{v:,.2f} m", "Muestra (nh)": f"{nh:,.2f} m", "%": f"{(nh/v)*100:.2f}%"})
+                porc_muestra = (nh / n_supervisar) * 100 # % que representa de la muestra total
+                filas_t.append({
+                    "Tipo de Terreno": k, 
+                    "Población (Nh)": f"{v:,.2f} m", 
+                    "Muestra (nh)": f"{nh:,.2f} m", 
+                    "% de la Muestra": f"{porc_muestra:.2f} %"
+                })
             st.table(pd.DataFrame(filas_t))
 
         with col_mat2:
-            st.markdown("### Matrix B: Tipo de Pavimento")
+            st.markdown("### Distribución por Tipo de Pavimento")
             filas_p = []
             for k, v in datos_pavimento.items():
                 wh = v / n_poblacion_total
                 nh = n_supervisar * wh
-                filas_p.append({"Pavimento": k, "Población (Nh)": f"{v:,.2f} m", "Muestra (nh)": f"{nh:,.2f} m", "%": f"{(nh/v)*100:.2f}%"})
+                porc_muestra = (nh / n_supervisar) * 100 # % que representa de la muestra total
+                filas_p.append({
+                    "Tipo de Pavimento": k, 
+                    "Población (Nh)": f"{v:,.2f} m", 
+                    "Muestra (nh)": f"{nh:,.2f} m", 
+                    "% de la Muestra": f"{porc_muestra:.2f} %"
+                })
             st.table(pd.DataFrame(filas_p))
 
         # ==========================================
